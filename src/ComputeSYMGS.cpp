@@ -63,7 +63,6 @@
             A.offsets[i],                                           \
             A.ell_col_ind,                                          \
             A.ell_val,                                              \
-            A.inv_diag,                                             \
             r.d_values,                                             \
             x.d_values);                                            \
     }
@@ -81,7 +80,6 @@
             A.sizes[0],                                              \
             A.ell_col_ind,                                           \
             A.ell_val,                                               \
-            A.inv_diag,                                              \
             r.d_values,                                              \
             x.d_values);                                             \
     }
@@ -106,15 +104,14 @@
 
 template <unsigned int BLOCKSIZE, unsigned int WIDTH>
 __launch_bounds__(BLOCKSIZE)
-__global__ void kernel_symgs_sweep(local_int_t m,
-                                   local_int_t n,
-                                   local_int_t block_nrow,
-                                   local_int_t offset,
+__global__ void kernel_symgs_sweep(const local_int_t m,
+                                   const local_int_t n,
+                                   const local_int_t block_nrow,
+                                   const local_int_t offset,
                                    const local_int_t* ell_col_ind,
-                                   const double* ell_val,
-                                   const double* inv_diag,
-                                   const double* x,
-                                   double* y)
+                                   const double* __restrict__ ell_val,
+                                   const double* __restrict__ x,
+                                   double* __restrict__ y)
 {
     local_int_t gid = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
@@ -127,32 +124,34 @@ __global__ void kernel_symgs_sweep(local_int_t m,
     local_int_t idx = row;
 
     double sum = __builtin_nontemporal_load(x + row);
+    double invdiag{};
 
 #pragma unroll
     for(local_int_t p = 0; p < WIDTH; ++p)
     {
-        local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
+        const local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
 
         if(col >= 0 && col < n && col != row)
         {
             sum = fma(-__builtin_nontemporal_load(ell_val + idx), y[col], sum);
+        } else if(col == row) {
+            invdiag = 1.0 / __builtin_nontemporal_load(ell_val + idx);
         }
 
         idx += m;
     }
 
-    __builtin_nontemporal_store(sum * __builtin_nontemporal_load(inv_diag + row), y + row);
+    __builtin_nontemporal_store(sum * invdiag, y + row);
 }
 
 template <unsigned int BLOCKSIZE, unsigned int WIDTH>
 __launch_bounds__(BLOCKSIZE)
-__global__ void kernel_symgs_interior(local_int_t m,
-                                      local_int_t block_nrow,
+__global__ void kernel_symgs_interior(const local_int_t m,
+                                      const local_int_t block_nrow,
                                       const local_int_t* ell_col_ind,
-                                      const double* ell_val,
-                                      const double* inv_diag,
-                                      const double* x,
-                                      double* y)
+                                      const double* __restrict__ ell_val,
+                                      const double* __restrict__ x,
+                                      double* __restrict__ y)
 {
     local_int_t row = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
@@ -164,21 +163,24 @@ __global__ void kernel_symgs_interior(local_int_t m,
     local_int_t idx = row;
 
     double sum = __builtin_nontemporal_load(x + row);
+    double invdiag{};
 
 #pragma unroll
     for(local_int_t p = 0; p < WIDTH; ++p)
     {
-        local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
+        const local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
 
         if(col >= 0 && col < m && col != row)
         {
             sum = fma(-__builtin_nontemporal_load(ell_val + idx), __ldg(y + col), sum);
+        } else if(col == row) {
+            invdiag = 1.0 / __builtin_nontemporal_load(ell_val + idx);
         }
 
         idx += m;
     }
 
-    __builtin_nontemporal_store(sum * __builtin_nontemporal_load(inv_diag + row), y + row);
+    __builtin_nontemporal_store(sum * invdiag, y + row);
 }
 
 template <unsigned int BLOCKSIZE, unsigned int WIDTH>

@@ -180,7 +180,7 @@ void PrepareSendBuffer(const SparseMatrix& A, const Vector& x)
 
 void ExchangeHaloAsync(const SparseMatrix& A, Vector& x)
 {
-    int num_neighbors = A.numberOfSendNeighbors;
+    const int num_neighbors = A.numberOfSendNeighbors;
     int MPI_MY_TAG = 99;
 
     // Post async boundary receives
@@ -195,7 +195,7 @@ void ExchangeHaloAsync(const SparseMatrix& A, Vector& x)
 
     for(int n = 0; n < num_neighbors; ++n)
     {
-        local_int_t nrecv = A.receiveLength[n];
+        const local_int_t nrecv = A.receiveLength[n];
 
         MPI_Irecv(recv_buffer + offset,
                   nrecv,
