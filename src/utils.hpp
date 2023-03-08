@@ -30,6 +30,8 @@
 #define UTILS_HPP
 
 #include <cstdio>
+#include <stdexcept>
+#include <string>
 #include <hip/hip_runtime_api.h>
 
 #include "Memory.hpp"
@@ -96,6 +98,21 @@ extern hipAllocator_t allocator;
         hipDeviceReset();       \
         exit(1);                \
     }                           \
+}
+
+namespace rochpcg {
+
+class UnsupportedELLWidth : public std::runtime_error
+{
+public:
+    UnsupportedELLWidth(int line, std::string file)
+        : std::runtime_error("Unsupported ELL width at " + std::to_string(line) + ":" + file)
+    { }
+};
+
+#define ROCHPCG_THROW_UNSUPPORTED_ELL_WIDTH \
+    throw rochpcg::UnsupportedELLWidth(__LINE__, __FILE__)
+
 }
 
 #endif // UTILS_HPP

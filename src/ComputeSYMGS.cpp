@@ -248,16 +248,15 @@ __global__ void kernel_pointwise_mult(local_int_t size,
     out[gid] = x[gid] * y[gid];
 }
 
-template <unsigned int BLOCKSIZE>
+template <unsigned int BLOCKSIZE, unsigned int WIDTH>
 __launch_bounds__(BLOCKSIZE)
-__global__ void kernel_forward_sweep_0(local_int_t m,
-                                       local_int_t block_nrow,
-                                       local_int_t offset,
-                                       const local_int_t* ell_col_ind,
-                                       const double* ell_val,
-                                       const local_int_t* diag_idx,
-                                       const double* x,
-                                       double* y)
+__global__ void kernel_forward_sweep_0(const local_int_t m,
+                                       const local_int_t block_nrow,
+                                       const local_int_t offset,
+                                       const local_int_t* __restrict__ ell_col_ind,
+                                       const double* __restrict__ ell_val,
+                                       const double* __restrict__ x,
+                                       double* __restrict__ y)
 {
     local_int_t gid = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
@@ -268,13 +267,16 @@ __global__ void kernel_forward_sweep_0(local_int_t m,
 
     local_int_t row  = gid + offset;
     local_int_t idx  = row;
-    local_int_t diag = __builtin_nontemporal_load(diag_idx + row);
 
     double sum = __builtin_nontemporal_load(x + row);
 
-    for(local_int_t p = 0; p < diag; ++p)
+    for(local_int_t p = 0; p < WIDTH; ++p)
     {
         local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
+        // assume all lower triangular entries are before diag
+        if(col == row) {
+            break;
+        }
 
         // Every entry above offset is zero
         if(col >= 0 && col < offset)
@@ -292,23 +294,23 @@ __global__ void kernel_forward_sweep_0(local_int_t m,
 
 template <unsigned int BLOCKSIZE>
 __launch_bounds__(BLOCKSIZE)
-__global__ void kernel_backward_sweep_0(local_int_t m,
-                                        local_int_t block_nrow,
-                                        local_int_t offset,
-                                        local_int_t ell_width,
-                                        const local_int_t* ell_col_ind,
-                                        const double* ell_val,
-                                        const local_int_t* diag_idx,
-                                        double* x)
+__global__ void kernel_backward_sweep_0(const local_int_t m,
+                                        const local_int_t block_nrow,
+                                        const local_int_t offset,
+                                        const local_int_t ell_width,
+                                        const local_int_t* __restrict__ ell_col_ind,
+                                        const double* __restrict__ ell_val,
+                                        const local_int_t* __restrict__ diag_idx,
+                                        double* __restrict__ x)
 {
-    local_int_t gid = blockIdx.x * BLOCKSIZE + threadIdx.x;
+    const local_int_t gid = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
     if(gid >= block_nrow)
     {
         return;
     }
 
-    local_int_t row  = gid + offset;
+    const local_int_t row  = gid + offset;
     local_int_t diag = __builtin_nontemporal_load(diag_idx + row);
     local_int_t idx  = diag * m + row;
 
@@ -410,17 +412,20 @@ int ComputeSYMGSZeroGuess(const SparseMatrix& A, const Vector& r, Vector& x)
         A.inv_diag,
         x.d_values);
 
-    for(local_int_t i = 1; i < A.nblocks; ++i)
-    {
-        kernel_forward_sweep_0<1024><<<(A.sizes[i] - 1) / 1024 + 1, 1024>>>(
-            A.localNumberOfRows,
-            A.sizes[i],
-            A.offsets[i],
-            A.ell_col_ind,
-            A.ell_val,
-            A.diag_idx,
-            r.d_values,
-            x.d_values);
+    if(A.ell_width == 27) {
+        for(local_int_t i = 1; i < A.nblocks; ++i)
+        {
+            kernel_forward_sweep_0<1024,27><<<(A.sizes[i] - 1) / 1024 + 1, 1024>>>(
+                A.localNumberOfRows,
+                A.sizes[i],
+                A.offsets[i],
+                A.ell_col_ind,
+                A.ell_val,
+                r.d_values,
+                x.d_values);
+        }
+    } else {
+        ROCHPCG_THROW_UNSUPPORTED_ELL_WIDTH;
     }
 
     // Solve U
