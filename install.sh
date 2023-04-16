@@ -332,7 +332,6 @@ elif [[ "${build_type}" == "craypat" ]]; then
 else
   echo "Invalid build type!"
   exit 1
->>>>>>> 3552e8a (added build types and option for building for Cray PAT analysis)
 fi
 
 # Default cmake executable is called cmake
