@@ -68,6 +68,10 @@ using std::endl;
 #include <roctracer/roctx.h>
 #endif
 
+#ifdef CRAYPAT
+#include "pat_api.h"
+#endif
+
 
 #include "hpcg.hpp"
 
@@ -109,6 +113,10 @@ int main(int argc, char * argv[]) {
 
 #ifndef HPCG_NO_MPI
   MPI_Init(&argc, &argv);
+#endif
+
+#ifdef CRAYPAT
+  PAT_record(PAT_STATE_OFF);
 #endif
 
   HPCG_Params params;
@@ -502,7 +510,14 @@ int main(int argc, char * argv[]) {
   while(total_runtime - times[0] > 0.0 || actualCgSets < numberOfCgSets)
   {
     HIPZeroVector(x); // Zero out x
+
+#ifdef CRAYPAT
+  PAT_record(PAT_STATE_ON);
+#endif
     ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, &times[0], true, false);
+#ifdef CRAYPAT
+  PAT_record(PAT_STATE_OFF);
+#endif
     if (ierr) HPCG_fout << "Error in call to CG: " << ierr << ".\n" << endl;
     if (rank==0) HPCG_fout << "Call [" << actualCgSets << "] Scaled Residual [" << normr/normr0 << "]" << endl;
 
