@@ -91,7 +91,7 @@
         dim3 blocks((A.halo_rows - 1) / blocksize + 1);           \
         dim3 threads(blocksize);                                  \
                                                                   \
-        kernel_symgs_halo<blocksize, width><<<blocks, threads>>>( \
+        kernel_symgs_halo<blocksize, width><<<blocks, threads, 0, stream_halo>>>( \
             A.halo_rows,                                          \
             A.localNumberOfColumns,                               \
             A.sizes[0],                                           \
@@ -373,12 +373,15 @@ int ComputeSYMGS(const SparseMatrix& A, const Vector& r, Vector& x)
 
         if(A.ell_width == 27) LAUNCH_SYMGS_INTERIOR(1024, 27);
 
-        ExchangeHaloAsync(A, x);
+        ExchangeHaloAsyncNosync(A, x);
         ObtainRecvBuffer(A, x);
 
         if(A.ell_width == 27) LAUNCH_SYMGS_HALO(256, 27);
 
         ++i;
+        
+        HIP_CHECK(hipStreamSynchronize(stream_interior));
+        HIP_CHECK(hipStreamSynchronize(stream_halo));
     }
 #endif
 
