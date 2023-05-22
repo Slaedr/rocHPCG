@@ -76,6 +76,7 @@ int ComputeMG(const SparseMatrix& A, const Vector& r, Vector& x)
             RETURN_IF_HPCG_ERROR(ComputeSYMGS(A, r, x));
         }
 
+        //HIP_CHECK(hipStreamSynchronize(stream_halo));
 #ifndef HPCG_REFERENCE
         RETURN_IF_HPCG_ERROR(ComputeFusedSpMVRestriction(A, r, x));
 #else

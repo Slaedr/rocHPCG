@@ -204,12 +204,15 @@ int ComputeFusedSpMVRestriction(const SparseMatrix& A, const Vector& rf, Vector&
     }
 #endif
 
-    if(A.ell_width == 27) LAUNCH_FUSED_RESTRICT_SPMV(1024, 27);
+    if(A.ell_width == 27) {
+        // on stream_interior
+        LAUNCH_FUSED_RESTRICT_SPMV(1024, 27);
+    }
 
 #ifndef HPCG_NO_MPI
     if(A.geom->size > 1)
     {
-        ExchangeHaloAsync(A, xf);
+        ExchangeHaloAsyncNosync(A, xf);
         ObtainRecvBuffer(A, xf);
 
         dim3 blocks((A.halo_rows - 1) / 128 + 1);
