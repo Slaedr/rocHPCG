@@ -67,6 +67,16 @@ else()
   endif()
   message(STATUS "Found MPI C headers at ${MPI_C_INCLUDE_DIRS}.")
   message(STATUS "Found MPI CXX headers at ${MPI_CXX_INCLUDE_DIRS}.")
+
+  # Link GTL
+  if(GPU_AWARE_MPI)
+    string(SUBSTRING $ENV{PE_MPICH_GTL_DIR_amd_gfx90a} 2 -1 GTL_DIR)
+    find_library(GTL_LIB mpi_gtl_hsa PATHS ${GTL_DIR})
+    if(${GTL_LIB} STREQUAL "GTL_LIB-NOTFOUND")
+      message(SEND_ERROR "MPI and GPU-aware MPI were requested but GTL was not found!")
+    endif()
+    message(STATUS "GTL library found: ${GTL_LIB}")
+  endif()
 endif()
 
 # gtest
