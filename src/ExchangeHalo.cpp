@@ -179,7 +179,7 @@ void PrepareSendBuffer(const SparseMatrix& A, const Vector& x)
 #endif
 }
 
-void ExchangeHaloAsync(const SparseMatrix& A, Vector& x)
+void ExchangeHaloAsync(const bool sync_halo_stream, const SparseMatrix& A, Vector& x)
 {
     int num_neighbors = A.numberOfSendNeighbors;
     int MPI_MY_TAG = 99;
@@ -208,65 +208,10 @@ void ExchangeHaloAsync(const SparseMatrix& A, Vector& x)
 
         offset += nrecv;
     }
-
-    // Synchronize stream to make sure that send buffer is available
-    // WARNING: This is needed even if nothing else is happening on the stream stream_halo!
-    HIP_CHECK(hipStreamSynchronize(stream_halo));
-
-    // Post async boundary sends
-    offset = 0;
-
-    // Send buffer
-#ifdef GPU_AWARE_MPI
-    double* send_buffer = A.d_send_buffer;
-#else
-    double* send_buffer = A.send_buffer;
-#endif
-
-    for(int n = 0; n < num_neighbors; ++n)
-    {
-        local_int_t nsend = A.sendLength[n];
-
-        MPI_Isend(send_buffer + offset,
-                  nsend,
-                  MPI_DOUBLE,
-                  A.neighbors[n],
-                  MPI_MY_TAG,
-                  MPI_COMM_WORLD,
-                  A.send_request + n);
-
-        offset += nsend;
-    }
-}
-
-void ExchangeHaloAsyncNosync(const SparseMatrix& A, Vector& x)
-{
-    int num_neighbors = A.numberOfSendNeighbors;
-    int MPI_MY_TAG = 99;
-
-    // Post async boundary receives
-    local_int_t offset = 0;
-
-    // Receive buffer
-#ifdef GPU_AWARE_MPI
-    double* recv_buffer = x.d_values + A.localNumberOfRows;
-#else
-    double* recv_buffer = A.recv_buffer;
-#endif
-
-    for(int n = 0; n < num_neighbors; ++n)
-    {
-        local_int_t nrecv = A.receiveLength[n];
-
-        MPI_Irecv(recv_buffer + offset,
-                  nrecv,
-                  MPI_DOUBLE,
-                  A.neighbors[n],
-                  MPI_MY_TAG,
-                  MPI_COMM_WORLD,
-                  A.recv_request + n);
-
-        offset += nrecv;
+    
+    if(sync_halo_stream) {
+        // Synchronize stream to make sure that send buffer is available
+        HIP_CHECK(hipStreamSynchronize(stream_halo));
     }
 
     // Post async boundary sends
