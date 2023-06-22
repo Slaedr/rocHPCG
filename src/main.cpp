@@ -330,7 +330,7 @@ int main(int argc, char * argv[]) {
   int totalNiters_ref = 0;
   double normr = 0.0;
   double normr0 = 0.0;
-  int refMaxIters = 50;
+  const int refMaxIters = 50;
   numberOfCalls = 1; // Only need to run the residual reduction analysis once
 
   // Compute the residual reduction for the natural ordering and reference kernels
@@ -478,8 +478,8 @@ int main(int argc, char * argv[]) {
   // Here we finally run the benchmark phase
   // The variable total_runtime is the target benchmark execution time in seconds
 
-  double total_runtime = params.runningTime;
-  int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
+  const double total_runtime = params.runningTime;
+  const int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
 
 #ifdef HPCG_DEBUG
   if (rank==0) {
@@ -527,7 +527,7 @@ int main(int argc, char * argv[]) {
             printf("-- Performing additional CG sets, to match time requirement of %0.1lf seconds ...\n", total_runtime);
         }
 
-        double gflops = ComputeTotalGFlops(A, numberOfMgLevels, actualCgSets + 1, refMaxIters, optMaxIters, &times[0]);
+        const double gflops = ComputeTotalGFlops(A, numberOfMgLevels, actualCgSets + 1, refMaxIters, optMaxIters, &times[0]);
         char c = '%';
 
         printf("CG set %0d / %0d    %7.4lf GFlop/s     (%7.4lf GFlop/s per process)    %d%c    %0.1lf sec left\n",

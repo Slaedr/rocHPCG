@@ -180,8 +180,8 @@ void PrepareSendBuffer(const SparseMatrix& A, const Vector& x)
 
 void ExchangeHaloAsync(const SparseMatrix& A, Vector& x)
 {
-    int num_neighbors = A.numberOfSendNeighbors;
-    int MPI_MY_TAG = 99;
+    const int num_neighbors = A.numberOfSendNeighbors;
+    const int MPI_MY_TAG = 99;
 
     // Post async boundary receives
     local_int_t offset = 0;
