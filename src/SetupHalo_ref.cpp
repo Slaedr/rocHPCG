@@ -81,7 +81,7 @@ void SetupHalo_ref(SparseMatrix & A) {
     global_int_t currentGlobalRow = A.localToGlobalMap[i];
     for (int j=0; j<nonzerosInRow[i]; j++) {
       global_int_t curIndex = mtxIndG[i][j];
-      int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
+      int rankIdOfColumnEntry = A.geom->ComputeRankOfMatrixRow(curIndex);
 #ifdef HPCG_DETAILED_DEBUG
       HPCG_fout << "rank, row , col, globalToLocalMap[col] = " << A.geom->rank << " " << currentGlobalRow << " "
           << curIndex << " " << A.globalToLocalMap[curIndex] << endl;
@@ -145,7 +145,7 @@ void SetupHalo_ref(SparseMatrix & A) {
   for (local_int_t i=0; i< localNumberOfRows; i++) {
     for (int j=0; j<nonzerosInRow[i]; j++) {
       global_int_t curIndex = mtxIndG[i][j];
-      int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
+      int rankIdOfColumnEntry = A.geom->ComputeRankOfMatrixRow(curIndex);
       if (A.geom->rank==rankIdOfColumnEntry) { // My column index, so convert to local index
         mtxIndL[i][j] = A.globalToLocalMap[curIndex];
       } else { // If column index is not a row index, then it comes from another processor

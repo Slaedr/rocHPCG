@@ -32,46 +32,30 @@ using std::endl;
 
 #endif
 
-/*!
-  Computes the factorization of the total number of processes into a
-  3-dimensional process grid that is as close as possible to a cube. The
-  quality of the factorization depends on the prime number structure of the
-  total number of processes. It then stores this decompostion together with the
-  parallel parameters of the run in the geometry data structure.
-
-  @param[in]  size total number of MPI processes
-  @param[in]  rank this process' rank among other MPI processes
-  @param[in]  numThreads number of OpenMP threads in this process
-  @param[in]  pz z-dimension processor ID where second zone of nz values start
-  @param[in]  nx, ny, nz number of grid points for each local block in the x, y, and z dimensions, respectively
-  @param[out] geom data structure that will store the above parameters and the factoring of total number of processes into three dimensions
-*/
-void GenerateGeometry(int size, int rank, int numThreads,
-  int pz, local_int_t zl, local_int_t zu,
-  local_int_t nx, local_int_t ny, local_int_t nz,
-  int npx, int npy, int npz,
-  Geometry * geom)
+Geometry::Geometry(const int size_a, const int rank_a, const int numThreads_a,
+  const int pz_a, const local_int_t zl, const local_int_t zu,
+  const local_int_t nx_a, const local_int_t ny_a, const local_int_t nz_a,
+  const int npx_a, const int npy_a, const int npz_a)
+    : size{size_a}, rank{rank_a}, numThreads{numThreads_a}, nx{nx_a}, ny{ny_a}, nz{nz_a},
+    npx{npx_a}, npy{npy_a}, npz{npz_a}, pz{pz_a}, npartz{0}
 {
 
   if (npx * npy * npz <= 0 || npx * npy * npz > size)
     ComputeOptimalShapeXYZ( size, npx, npy, npz );
 
-  int * partz_ids = 0;
-  local_int_t * partz_nz = 0;
-  int npartz = 0;
   if (pz==0) { // No variation in nz sizes
     npartz = 1;
-    partz_ids = new int[1];
-    partz_nz = new local_int_t[1];
+    partz_ids.resize(1);
+    partz_nz.resize(1);
     partz_ids[0] = npz;
     partz_nz[0] = nz;
   }
   else {
     npartz = 2;
-    partz_ids = new int[2];
+    partz_ids.resize(2);
     partz_ids[0] = pz;
     partz_ids[1] = npz;
-    partz_nz = new local_int_t[2];
+    partz_nz.resize(2);
     partz_nz[0] = zl;
     partz_nz[1] = zu;
   }
@@ -83,9 +67,9 @@ void GenerateGeometry(int size, int rank, int numThreads,
   }
 
   // Now compute this process's indices in the 3D cube
-  int ipz = rank/(npx*npy);
-  int ipy = (rank-ipz*npx*npy)/npx;
-  int ipx = rank%npx;
+  ipz = rank/(npx*npy);
+  ipy = (rank-ipz*npx*npy)/npx;
+  ipx = rank%npx;
 
 #ifdef HPCG_DEBUG
   if (rank==0)
@@ -104,27 +88,11 @@ void GenerateGeometry(int size, int rank, int numThreads,
 
   assert(size>=npx*npy*npz);
 #endif
-  geom->size = size;
-  geom->rank = rank;
-  geom->numThreads = numThreads;
-  geom->nx = nx;
-  geom->ny = ny;
-  geom->nz = nz;
-  geom->npx = npx;
-  geom->npy = npy;
-  geom->npz = npz;
-  geom->pz = pz;
-  geom->npartz = npartz;
-  geom->partz_ids = partz_ids;
-  geom->partz_nz = partz_nz;
-  geom->ipx = ipx;
-  geom->ipy = ipy;
-  geom->ipz = ipz;
 
-// These values should be defined to take into account changes in nx, ny, nz values
-// due to variable local grid sizes
-  global_int_t gnx = npx*nx;
-  global_int_t gny = npy*ny;
+  // These values should be defined to take into account changes in nx, ny, nz values
+  // due to variable local grid sizes
+  gnx = npx*nx;
+  gny = npy*ny;
   //global_int_t gnz = npz*nz;
   // We now permit varying values for nz for any nx-by-ny plane of MPI processes.
   // npartz is the number of different groups of nx-by-ny groups of processes.
@@ -133,7 +101,7 @@ void GenerateGeometry(int size, int rank, int numThreads,
 
   //        With no variation, npartz = 1, partz_ids[0] = npz, partz_nz[0] = nz
 
-  global_int_t gnz = 0;
+  gnz = 0;
   ipartz_ids = 0;
 
   for (int i=0; i< npartz; ++i) {
@@ -141,7 +109,7 @@ void GenerateGeometry(int size, int rank, int numThreads,
     gnz += partz_nz[i]*ipartz_ids;
   }
   //global_int_t giz0 = ipz*nz;
-  global_int_t giz0 = 0;
+  giz0 = 0;
   ipartz_ids = 0;
   for (int i=0; i< npartz; ++i) {
     int ipart_nz = partz_nz[i];
@@ -154,16 +122,6 @@ void GenerateGeometry(int size, int rank, int numThreads,
     }
 
   }
-  global_int_t gix0 = ipx*nx;
-  global_int_t giy0 = ipy*ny;
-
-// Keep these values for later
-  geom->gnx = gnx;
-  geom->gny = gny;
-  geom->gnz = gnz;
-  geom->gix0 = gix0;
-  geom->giy0 = giy0;
-  geom->giz0 = giz0;
-
-  return;
+  gix0 = ipx*nx;
+  giy0 = ipy*ny;
 }

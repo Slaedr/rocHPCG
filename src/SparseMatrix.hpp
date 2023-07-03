@@ -56,6 +56,8 @@
 
 #include <vector>
 #include <cassert>
+#include <memory>
+
 #include <hip/hip_runtime_api.h>
 
 #include "utils.hpp"
@@ -74,7 +76,7 @@ using GlobalToLocalMap = std::unordered_map< global_int_t, local_int_t >;
 
 struct SparseMatrix_STRUCT {
   char  * title; //!< name of the sparse matrix
-  Geometry * geom; //!< geometry associated with this matrix
+  std::shared_ptr<const Geometry> geom; //!< geometry associated with this matrix
   global_int_t totalNumberOfRows; //!< total number of matrix rows across all processes
   global_int_t totalNumberOfNonzeros; //!< total number of matrix nonzeros across all processes
   local_int_t localNumberOfRows; //!< number of rows local to this process
@@ -161,7 +163,7 @@ typedef struct SparseMatrix_STRUCT SparseMatrix;
 
   @param[in] A the known system matrix
  */
-inline void InitializeSparseMatrix(SparseMatrix & A, Geometry * geom) {
+inline void InitializeSparseMatrix(SparseMatrix & A, std::shared_ptr<const Geometry> geom) {
   A.title = 0;
   A.geom = geom;
   A.totalNumberOfRows = 0;
@@ -309,7 +311,6 @@ inline void DeleteMatrix(SparseMatrix & A) {
   if(A.halo_val) HIP_CHECK(deviceFree(A.halo_val));
 #endif
 
-  if (A.geom!=0) { DeleteGeometry(*A.geom); delete A.geom; A.geom = 0;}
   if (A.Ac!=0) { DeleteMatrix(*A.Ac); delete A.Ac; A.Ac = 0;} // Delete coarse matrix
   if (A.mgData!=0) { DeleteMGData(*A.mgData); delete A.mgData; A.mgData = 0;} // Delete MG data
 

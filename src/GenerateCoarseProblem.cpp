@@ -143,9 +143,6 @@ void GenerateCoarseProblem(const SparseMatrix & Af) {
                                                      d_f2cOperator,
                                                      d_c2fOperator);
 
-    // Construct the geometry and linear system
-    Geometry * geomc = new Geometry;
-
     // Coarsen nz for the lower block in the z processor dimension
     local_int_t zlc = 0;
 
@@ -160,7 +157,7 @@ void GenerateCoarseProblem(const SparseMatrix & Af) {
         zuc = Af.geom->partz_nz[1] / 2;
     }
 
-    GenerateGeometry(Af.geom->size, Af.geom->rank, Af.geom->numThreads, Af.geom->pz, zlc, zuc, nxc, nyc, nzc, Af.geom->npx, Af.geom->npy, Af.geom->npz, geomc);
+    auto geomc = std::make_shared<Geometry>(Af.geom->size, Af.geom->rank, Af.geom->numThreads, Af.geom->pz, zlc, zuc, nxc, nyc, nzc, Af.geom->npx, Af.geom->npy, Af.geom->npz);
 
     SparseMatrix* Ac = new SparseMatrix;
     InitializeSparseMatrix(*Ac, geomc);

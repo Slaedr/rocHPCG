@@ -60,8 +60,9 @@
 using std::cin;
 #endif
 using std::endl;
-
 #include <vector>
+#include <memory>
+
 #include <hip/hip_runtime_api.h>
 
 #ifdef OPT_ROCTX
@@ -186,8 +187,8 @@ int main(int argc, char * argv[]) {
 #endif
 
   // Construct the geometry and linear system
-  Geometry * geom = new Geometry;
-  GenerateGeometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz, geom);
+  auto geom = std::make_shared<const Geometry>(size, rank, params.numThreads, params.pz, params.zl, params.zu,
+          nx, ny, nz, params.npx, params.npy, params.npz);
 
   ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz, "process grid", rank==0);
   if (ierr)
