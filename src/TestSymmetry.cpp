@@ -91,9 +91,9 @@ int TestSymmetry(SparseMatrix & A, Vector & b, Vector & xexact, TestSymmetryData
  local_int_t ncol = A.localNumberOfColumns;
 
  Vector x_ncol, y_ncol, z_ncol;
- HIPInitializeVector(x_ncol, ncol);
- HIPInitializeVector(y_ncol, ncol);
- HIPInitializeVector(z_ncol, ncol);
+ HIP_CHECK(HIPInitializeVector(x_ncol, ncol));
+ HIP_CHECK(HIPInitializeVector(y_ncol, ncol));
+ HIP_CHECK(HIPInitializeVector(z_ncol, ncol));
 
  double t4 = 0.0; // Needed for dot-product call, otherwise unused
  testsymmetry_data.count_fail = 0;

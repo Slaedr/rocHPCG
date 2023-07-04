@@ -82,11 +82,11 @@ inline void InitializeVector(Vector & v, local_int_t localLength) {
   return;
 }
 
-inline void HIPInitializeVector(Vector& v, local_int_t localLength)
+inline hipError_t HIPInitializeVector(Vector& v, local_int_t localLength)
 {
     v.localLength = localLength;
     v.optimizationData = 0;
-    HIP_CHECK(deviceMalloc((void**)&v.d_values, sizeof(double) * localLength));
+    return deviceMalloc((void**)&v.d_values, sizeof(double) * localLength);
 }
 
 /*!

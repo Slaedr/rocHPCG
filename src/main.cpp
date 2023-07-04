@@ -126,7 +126,7 @@ int main(int argc, char * argv[]) {
 
   // Check if QuickPath option is enabled.
   // If the running time is set to zero, we minimize all paths through the program
-  bool quickPath = (params.runningTime==0);
+  const bool quickPath = (params.runningTime==0);
 
   int size = params.comm_size, rank = params.comm_rank; // Number of MPI processes, My process ID
 
@@ -181,6 +181,10 @@ int main(int argc, char * argv[]) {
   /////////////////////////
   // Problem setup Phase //
   /////////////////////////
+
+  if(rank == size-1) {
+      std::cout << "Setting up problem..\n" << std::flush;
+  }
 
 #ifdef HPCG_DEBUG
   double t1 = mytimer();
@@ -253,8 +257,8 @@ int main(int argc, char * argv[]) {
        curxexact = 0;
     }
   }
-    else
-    {
+  else
+  {
     HIP_CHECK(deviceFree(A.d_nonzerosInRow));
     HIP_CHECK(deviceFree(A.d_matrixDiagonal));
 
@@ -263,8 +267,8 @@ int main(int argc, char * argv[]) {
     {
       if(curLevelMatrix->mgData != NULL)
       {
-        deviceFree(curLevelMatrix->Ac->d_nonzerosInRow);
-        deviceFree(curLevelMatrix->Ac->d_matrixDiagonal);
+        HIP_CHECK(deviceFree(curLevelMatrix->Ac->d_nonzerosInRow));
+        HIP_CHECK(deviceFree(curLevelMatrix->Ac->d_matrixDiagonal));
         curLevelMatrix = curLevelMatrix->Ac;
       }
     }
@@ -281,6 +285,10 @@ int main(int argc, char * argv[]) {
   ////////////////////////////////////
   // Reference SpMV+MG Timing Phase //
   ////////////////////////////////////
+
+  if(rank == size-1) {
+      std::cout << "Timing SpMV and MG..\n";
+  }
 
   // Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
 
@@ -320,7 +328,10 @@ int main(int argc, char * argv[]) {
   // Reference CG Timing Phase //
   ///////////////////////////////
 
-  if(rank == 0) printf("\nStarting Reference CG Phase ...\n\n");
+  if(rank == 0) {
+      printf("\nStarting Reference CG Phase ...\n\n");
+      fflush(stdout);
+  }
 
 #ifdef HPCG_DEBUG
   t1 = mytimer();
@@ -356,6 +367,9 @@ int main(int argc, char * argv[]) {
   }
 
   // Call user-tunable set up function.
+  if(rank == size - 1) {
+      std::cout << "Optimizing..." << std::endl;
+  }
   double t7 = mytimer();
 #ifdef OPT_ROCTX
   roctxRangePush("Optimize");
@@ -370,7 +384,10 @@ int main(int argc, char * argv[]) {
   if (rank==0) HPCG_fout << "Total problem setup time in main (sec) = " << mytimer() - t1 << endl;
 #endif
 
-  if(rank == 0) printf("\nOptimization Phase took %0.2lf sec\n", times[7]);
+  if(rank == 0) {
+      printf("\nOptimization Phase took %0.2lf sec\n", times[7]);
+      fflush(stdout);
+  }
 
 #ifdef HPCG_DETAILED_DEBUG
   if (geom->size == 1) WriteProblem(*geom, A, b, x, xexact);
@@ -380,7 +397,10 @@ int main(int argc, char * argv[]) {
   // Validation Testing Phase //
   //////////////////////////////
 
-  if(rank == 0) printf("\nValidation Testing Phase ...\n");
+  if(rank == 0) {
+      printf("\nValidation Testing Phase ...\n");
+      fflush(stdout);
+  }
 
 #ifdef HPCG_DEBUG
   t1 = mytimer();
@@ -390,6 +410,11 @@ int main(int argc, char * argv[]) {
   if(params.verify)
   {
     TestCG(A, data, b, x, testcg_data);
+  }
+
+  if(rank == 0) {
+      printf("CG testing complete. Now testing symmetry...\n");
+      fflush(stdout);
   }
 
   TestSymmetryData testsymmetry_data;
@@ -410,7 +435,10 @@ int main(int argc, char * argv[]) {
   // Optimized CG Setup Phase //
   //////////////////////////////
 
-  if(rank == 0) printf("\nOptimized CG Setup ...\n\n");
+  if(rank == 0) {
+      printf("\nOptimized CG Setup ...\n\n");
+      fflush(stdout);
+  }
 
   niters = 0;
   normr = 0.0;
@@ -474,6 +502,7 @@ int main(int argc, char * argv[]) {
            used_mem >> 20,
            total_mem >> 20);
     printf("\nStarting Benchmarking Phase ...\n\n");
+    fflush(stdout);
   }
 
   // Here we finally run the benchmark phase
@@ -482,12 +511,12 @@ int main(int argc, char * argv[]) {
   const double total_runtime = params.runningTime;
   const int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
 
-#ifdef HPCG_DEBUG
+//#ifdef HPCG_DEBUG
   if (rank==0) {
-    HPCG_fout << "Projected running time: " << total_runtime << " seconds" << endl;
+    HPCG_fout << "Projected running time: " << total_runtime << " seconds\n";
     HPCG_fout << "Number of CG sets: " << numberOfCgSets << endl;
   }
-#endif
+//#endif
 
   /* This is the timed run for a specified amount of time. */
 
@@ -503,8 +532,8 @@ int main(int argc, char * argv[]) {
     opt_times[9] = times[9];
 
     printf("Performing (at least) %d CG sets in %0.1lf seconds ...\n",
-           numberOfCgSets,
-           total_runtime);
+           numberOfCgSets, total_runtime);
+    fflush(stdout);
   }
 
   while(total_runtime - times[0] > 0.0 || actualCgSets < numberOfCgSets)

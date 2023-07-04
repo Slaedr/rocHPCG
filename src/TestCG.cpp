@@ -115,9 +115,9 @@ int TestCG(SparseMatrix & A, CGData & data, Vector & b, Vector & x, TestCGData &
   std::vector< double > times(8,0.0);
   // Temporary storage for holding original diagonal and RHS
   Vector origDiagA, exaggeratedDiagA, origB;
-  HIPInitializeVector(origDiagA, A.localNumberOfRows);
-  HIPInitializeVector(exaggeratedDiagA, A.localNumberOfRows);
-  HIPInitializeVector(origB, A.localNumberOfRows);
+  HIP_CHECK(HIPInitializeVector(origDiagA, A.localNumberOfRows));
+  HIP_CHECK(HIPInitializeVector(exaggeratedDiagA, A.localNumberOfRows));
+  HIP_CHECK(HIPInitializeVector(origB, A.localNumberOfRows));
   HIPCopyMatrixDiagonal(A, origDiagA);
   HIPCopyVector(origDiagA, exaggeratedDiagA);
   HIPCopyVector(b, origB);

@@ -67,6 +67,9 @@ extern hipAllocator_t allocator;
                 err,                                                \
                 __FILE__,                                           \
                 __LINE__);                                          \
+        printf("HIP error %s (%d); file %s, line %d\n",             \
+                hipGetErrorString(err), err, __FILE__, __LINE__);   \
+        fflush(stdout);                                             \
                                                                     \
         hipDeviceReset();                                           \
         exit(1);                                                    \
