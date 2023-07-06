@@ -187,6 +187,20 @@ if(BUILD_TEST)
   target_link_libraries(rochpcg PRIVATE GTest::GTest)
 endif()
 
+if(HPCG_BUILD_FOR_CRAYPAT)
+    message(STATUS "Will build Craypat executable at ${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}+pat")
+    add_custom_command(COMMENT "Building Craypat instrumented executable"
+        OUTPUT "${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}+pat"
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        COMMAND rm -f rochpcg-${PROJECT_VERSION}+pat
+        COMMAND pat_build -g hip,mpi,omp -T _Z2CGRK19SparseM -w rochpcg-${PROJECT_VERSION}
+        MAIN_DEPENDENCY ${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}
+        DEPENDS rochpcg
+        )
+    add_custom_target(rochpcg_craypat_exec ALL
+        DEPENDS "${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}+pat")
+endif()
+
 
 
 
