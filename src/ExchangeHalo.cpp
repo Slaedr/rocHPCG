@@ -162,7 +162,7 @@ void PrepareSendBuffer(const SparseMatrix& A, const Vector& x)
     dim3 blocks((A.totalToBeSent - 1) / 128 + 1);
     dim3 threads(128);
 
-    kernel_gather<128><<<blocks, threads>>>(A.totalToBeSent,
+    kernel_gather<128><<<blocks, threads, 0, stream_halo>>>(A.totalToBeSent,
                                             x.d_values,
                                             A.d_elementsToSend,
                                             A.perm,

@@ -268,5 +268,7 @@ int ComputeSPMV(const SparseMatrix& A, Vector& x, Vector& y)
             y.d_values);
     }
 
+    HIP_CHECK(hipStreamSynchronize(stream_interior));
+
     return 0;
 }

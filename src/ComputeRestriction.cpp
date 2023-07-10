@@ -228,5 +228,9 @@ int ComputeFusedSpMVRestriction(const SparseMatrix& A, const Vector& rf, Vector&
     }
 #endif
 
+#ifdef CRAYPAT
+    HIP_CHECK(hipStreamSynchronize(stream_interior));
+#endif
+
     return 0;
 }

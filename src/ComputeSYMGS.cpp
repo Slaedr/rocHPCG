@@ -376,11 +376,15 @@ int ComputeSYMGS(const SparseMatrix& A, const Vector& r, Vector& x)
         ExchangeHaloAsync(A, x);
         ObtainRecvBuffer(A, x);
 
+        // Boundary cell layer update, but only cells of the zeroth color
         if(A.ell_width == 27) LAUNCH_SYMGS_HALO(256, 27);
 
         ++i;
     }
 #endif
+
+    // Complete zeroth color before starting the others
+    HIP_CHECK(hipStreamSynchronize(stream_interior));
 
     // Solve L
     for(; i < A.nblocks; ++i)
