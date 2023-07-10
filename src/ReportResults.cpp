@@ -512,6 +512,8 @@ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgS
            (frefnreads + frefnwrites) / (times[0] + fNumberOfCgSets * (times[7] / 10.0 + times[9] / 10.0)) / 1e9,
            totalGflops / A.geom->size,
            (frefnreads + frefnwrites) / (times[0] + fNumberOfCgSets * (times[7] / 10.0 + times[9] / 10.0)) / 1e9 / A.geom->size);
+
+    printf("\nDDOT AllReduce average time = %f.\n", t4avg);
   }
   return;
 }
