@@ -194,7 +194,7 @@ if(HPCG_BUILD_FOR_CRAYPAT)
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         COMMAND rm -f rochpcg-${PROJECT_VERSION}+pat
         COMMAND pat_build -g hip,mpi,omp -T _Z2CGRK19SparseM -w rochpcg-${PROJECT_VERSION}
-        MAIN_DEPENDENCY ${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}
+        #MAIN_DEPENDENCY ${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}
         DEPENDS rochpcg
         )
     add_custom_target(rochpcg_craypat_exec ALL
@@ -221,6 +221,7 @@ set_target_properties(rochpcg PROPERTIES DEBUG_POSTFIX "-d")
 # Install targets
 rocm_install_targets(TARGETS rochpcg
                      PREFIX rochpcg)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/bin/rochpcg-${PROJECT_VERSION}+pat" TYPE BIN)
 
 # Symbolic links
 rocm_install_symlink_subdir(rochpcg)
